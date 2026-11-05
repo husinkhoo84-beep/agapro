@@ -149,6 +149,24 @@ main .wrap.wide{grid-template-columns:minmax(0,1fr) 330px}
   .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
   .stats .stat:last-child{grid-column:1/-1}
 }
+.mat{margin-bottom:16px}
+.mat-grid{display:grid;align-items:start;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;padding:14px}
+.mat-card{border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px;min-width:0;background:var(--bg)}
+.mat-card h3{font-size:14px;margin:0;font-weight:700;overflow-wrap:anywhere}
+.mat-card p{margin:0;font-size:13px;color:var(--muted);white-space:pre-wrap;overflow-wrap:anywhere}
+.mat-card.info{border-color:var(--gold)}
+.mat-kind{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+.mat-frame{position:relative;width:100%;aspect-ratio:16/9;border-radius:9px;overflow:hidden;background:#000}
+.mat-frame iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.mat-act{display:flex;gap:6px;flex-wrap:wrap;margin-top:auto}
+.mat-act a.btn{display:inline-block;text-decoration:none;border-radius:9px;padding:7px 12px;font-weight:600;font-size:13px;background:var(--accent);color:var(--accent-ink)}
+.mat-act button{padding:6px 10px;font-size:13px}
+.mat-empty{padding:14px;color:var(--muted);font-size:13px;margin:0}
+#matForm{padding:14px;border-bottom:1px solid var(--line);display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+#matForm label{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:600}
+#matForm .full{grid-column:1/-1}
+#matForm .hint{font-weight:400;color:var(--muted);font-size:12px}
+@media (max-width:820px){#matForm{grid-template-columns:minmax(0,1fr)}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 .auth{min-height:100vh;display:grid;place-items:center;padding:24px max(16px,env(safe-area-inset-left,0px))}
 .auth .card{width:100%;max-width:380px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px;display:grid;gap:14px}
@@ -196,6 +214,29 @@ body:not(.locked) #authView{display:none}
 </section>
 
 <div class="wrap"><div class="banner" id="banner" hidden></div></div>
+<div class="wrap"><section class="panel mat" id="matPanel" hidden aria-label="Materi dan info">
+  <div class="panel-head">
+    <h2>Materi &amp; info AGA Pro</h2>
+    <button type="button" id="matAdd" class="primary" hidden>+ Tambah materi</button>
+    <button type="button" id="matToggle" aria-expanded="true">Sembunyikan</button>
+  </div>
+  <div id="matBody">
+    <form id="matForm" hidden>
+      <label>Jenis<select id="mKind">
+        <option value="video">Video</option>
+        <option value="file">File / brosur (PDF)</option>
+        <option value="info">Pengumuman</option>
+        <option value="contact">Kontak admin</option>
+      </select></label>
+      <label>Judul<input id="mTitle" maxlength="120" required placeholder="cth. Cara kerja AGA Pro"></label>
+      <label class="full"><span id="mUrlLbl">Link video (YouTube atau Google Drive)</span><input id="mUrl" maxlength="500" placeholder="https://youtu.be/..." autocomplete="off"><span class="hint" id="mUrlHint">Tempel link dari tombol Bagikan di YouTube, atau link Google Drive yang sudah diatur "Siapa saja yang memiliki link".</span></label>
+      <label class="full">Keterangan<textarea id="mNote" rows="3" maxlength="2000" placeholder="Opsional"></textarea></label>
+      <label>Urutan<input id="mSort" type="number" value="0" step="1"><span class="hint">Angka kecil tampil lebih dulu.</span></label>
+      <div class="full mat-act"><button type="submit" class="primary" id="mSave">Simpan</button><button type="button" id="mCancel">Batal</button></div>
+    </form>
+    <div class="mat-grid" id="matGrid"></div>
+  </div>
+</section></div>
 <main><div class="wrap" id="mainWrap">
   <section class="panel">
     <div class="panel-head">
@@ -752,6 +793,101 @@ async function loadAccess(){
   roleRows = boss() ? await must(sb.from("roles").select("*").order("created_at")) : mine;
   masterReqs = await must(sb.from("master_requests").select("*").order("created_at"));
 }
+
+// ---- materi (videos, files, announcements, admin contacts) ----
+let mats = [], matEdit = null;
+const MAT_KIND = {info:"Pengumuman", video:"Video", file:"File", contact:"Kontak admin"};
+const MAT_ORDER = {info:0, video:1, file:2, contact:3};
+async function loadMaterials(){
+  try{ mats = await must(sb.from("materials").select("*")); }
+  catch(e){ mats = []; }
+  renderMaterials();
+}
+function embedUrl(url){
+  let m = url.match(/(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([\w-]{11})/i);
+  if(m) return `https://www.youtube-nocookie.com/embed/${m[1]}`;
+  m = url.match(/drive\.google\.com\/file\/d\/([\w-]+)/i);
+  if(m) return `https://drive.google.com/file/d/${m[1]}/preview`;
+  return null;
+}
+function waLink(v){
+  v = String(v || "").trim();
+  if(/^https:\/\//i.test(v)) return v;
+  let d = v.replace(/\D/g, "");
+  if(!d) return "";
+  if(d.startsWith("0")) d = "62" + d.slice(1);
+  return "https://wa.me/" + d;
+}
+function renderMaterials(){
+  const panel = $("matPanel"), grid = $("matGrid");
+  $("matAdd").hidden = !boss();
+  panel.hidden = !boss() && !mats.length;
+  const list = [...mats].sort((a,b) => (MAT_ORDER[a.kind]??9)-(MAT_ORDER[b.kind]??9) || a.sort-b.sort || (b.created_at > a.created_at ? 1 : -1));
+  if(!list.length){ grid.innerHTML = `<p class="mat-empty">Belum ada materi. Klik "+ Tambah materi" untuk menambah video cara kerja, brosur, pengumuman, atau kontak admin.</p>`; return; }
+  grid.innerHTML = list.map(m => {
+    const url = m.url || "", emb = m.kind === "video" ? embedUrl(url) : null;
+    let body = "";
+    if(emb) body = `<div class="mat-frame"><iframe src="${esc(emb)}" title="${esc(m.title)}" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>`;
+    const btn = !url ? "" : m.kind === "contact" ? `<a class="btn" href="${esc(url)}" target="_blank" rel="noopener">${url.includes("wa.me") ? "Chat WhatsApp" : "Hubungi"}</a>`
+      : m.kind === "file" ? `<a class="btn" href="${esc(url)}" target="_blank" rel="noopener">Buka file</a>`
+      : (m.kind === "video" && !emb) || m.kind === "info" ? `<a class="btn" href="${esc(url)}" target="_blank" rel="noopener">Buka link</a>` : "";
+    const admin = boss() ? `<button type="button" data-mat-edit="${esc(m.id)}">Ubah</button><button type="button" class="danger" data-mat-del="${esc(m.id)}">Hapus</button>` : "";
+    return `<article class="mat-card ${esc(m.kind)}"><span class="mat-kind">${esc(MAT_KIND[m.kind] || m.kind)}</span><h3>${esc(m.title)}</h3>${body}${m.note ? `<p>${esc(m.note)}</p>` : ""}${btn || admin ? `<div class="mat-act">${btn}${admin}</div>` : ""}</article>`;
+  }).join("");
+}
+function matKindUi(){
+  const k = $("mKind").value;
+  const cfg = {
+    video: ["Link video (YouTube atau Google Drive)", "https://youtu.be/...", 'Tempel link dari tombol Bagikan di YouTube, atau link Google Drive yang sudah diatur "Siapa saja yang memiliki link".'],
+    file: ["Link file (Google Drive, dll.)", "https://drive.google.com/...", 'Upload PDF/brosur ke Google Drive, atur "Siapa saja yang memiliki link", lalu tempel linknya di sini.'],
+    info: ["Link (opsional)", "https://...", "Boleh dikosongkan. Tulis isi pengumuman di Keterangan."],
+    contact: ["No. WhatsApp atau link", "0812xxxxxxxx", "Nomor WhatsApp otomatis diubah jadi tombol Chat WhatsApp."]
+  }[k];
+  $("mUrlLbl").textContent = cfg[0]; $("mUrl").placeholder = cfg[1]; $("mUrlHint").textContent = cfg[2];
+}
+function openMatForm(m){
+  matEdit = m ? m.id : null;
+  $("mKind").value = m?.kind || "video"; $("mTitle").value = m?.title || ""; $("mUrl").value = m?.url || "";
+  $("mNote").value = m?.note || ""; $("mSort").value = m?.sort ?? 0;
+  matKindUi(); setMatOpen(true); $("matForm").hidden = false; $("mTitle").focus();
+}
+function setMatOpen(open){
+  $("matBody").hidden = !open; $("matToggle").textContent = open ? "Sembunyikan" : "Tampilkan";
+  $("matToggle").setAttribute("aria-expanded", open);
+  try{ localStorage.setItem("aga-mat-hidden", open ? "" : "1"); }catch(e){}
+}
+$("mKind").addEventListener("change", matKindUi);
+$("matAdd").addEventListener("click", () => openMatForm(null));
+$("mCancel").addEventListener("click", () => { $("matForm").hidden = true; matEdit = null; });
+$("matToggle").addEventListener("click", () => setMatOpen($("matBody").hidden));
+try{ if(localStorage.getItem("aga-mat-hidden")) setMatOpen(false); }catch(e){}
+$("matForm").addEventListener("submit", async ev => {
+  ev.preventDefault();
+  const kind = $("mKind").value, title = $("mTitle").value.trim();
+  let url = $("mUrl").value.trim();
+  if(!title){ toast("Judul wajib diisi"); return; }
+  if(kind === "contact") url = waLink(url);
+  else if(url && !/^https:\/\//i.test(url)) url = "https://" + url.replace(/^http:\/\//i, "");
+  if((kind === "video" || kind === "file") && !url){ toast("Link wajib diisi"); return; }
+  const row = {kind, title, url, note: $("mNote").value.trim(), sort: parseInt($("mSort").value, 10) || 0};
+  $("mSave").disabled = true;
+  try{
+    if(matEdit) await must(sb.from("materials").update(row).eq("id", matEdit));
+    else await must(sb.from("materials").insert(row));
+    $("matForm").hidden = true; matEdit = null; toast("Materi disimpan"); await loadMaterials();
+  }catch(e){ toast(errMsg(e)); }
+  finally{ $("mSave").disabled = false; }
+});
+$("matGrid").addEventListener("click", async ev => {
+  const ed = ev.target.closest("[data-mat-edit]"), del = ev.target.closest("[data-mat-del]");
+  if(ed){ openMatForm(mats.find(m => m.id === ed.dataset.matEdit)); return; }
+  if(del){
+    const m = mats.find(x => x.id === del.dataset.matDel);
+    if(!m || !confirm(`Hapus materi "${m.title}"?`)) return;
+    try{ await must(sb.from("materials").delete().eq("id", m.id)); toast("Materi dihapus"); await loadMaterials(); }
+    catch(e){ toast(errMsg(e)); }
+  }
+});
 let started = false, reloadT = null;
 async function start(session){
   myId = session.user.id; myEmail = (session.user.email || "").toLowerCase(); db = sb;
@@ -759,10 +895,11 @@ async function start(session){
   if(started) return; started = true;
   try{ await loadAccess(); await loadMembers(); }
   catch(e){ setSync("err", "Gagal memuat data"); toast(errMsg(e)); }
+  loadMaterials();
   sb.channel("members").on("postgres_changes", {event: "*", schema: "public", table: "members"}, () => {
     clearTimeout(reloadT); reloadT = setTimeout(() => loadMembers().catch(() => setSync("err", "Koneksi terputus")), 400);
   }).subscribe();
-  window.addEventListener("focus", () => { loadAccess().then(loadMembers).catch(() => {}); });
+  window.addEventListener("focus", () => { loadAccess().then(loadMembers).then(loadMaterials).catch(() => {}); });
 }
 
 // ---- login ----
