@@ -1,0 +1,816 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>AGA Pro Member</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+html{-webkit-text-size-adjust:100%}body{margin:0;font-size:14px}[hidden]{display:none!important}img{max-width:100%}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+/* Layout: sticky header + stats strip, then a two-pane workspace (tree | form/detail) that stacks on phones */
+:root{
+  --bg:#f3f5f8; --surface:#ffffff; --surface-2:#eaeef4; --fg:#16202e; --muted:#5b6778; --line:#d7dde6;
+  --accent:#1f4fd1; --accent-ink:#ffffff; --gold:#c98a09; --ok:#18794e; --warn:#b4540a; --danger:#c0362c;
+  --slot-empty:#d3d9e3;
+  --f-body:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f141c; --surface:#171e29; --surface-2:#1f2835; --fg:#e7ecf3; --muted:#9aa6b8; --line:#2c3746;
+  --accent:#6f95ff; --accent-ink:#0b1220; --gold:#f0b43c; --ok:#4fc58b; --warn:#f0a25a; --danger:#ff7b70;
+  --slot-empty:#334052; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f141c; --surface:#171e29; --surface-2:#1f2835; --fg:#e7ecf3; --muted:#9aa6b8; --line:#2c3746;
+  --accent:#6f95ff; --accent-ink:#0b1220; --gold:#f0b43c; --ok:#4fc58b; --warn:#f0a25a; --danger:#ff7b70;
+  --slot-empty:#334052; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.5}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+header .wrap{display:flex;align-items:center;gap:12px;padding-block:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;margin-right:auto}
+.logo{width:34px;height:34px;border-radius:9px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-weight:800;font-size:13px;letter-spacing:.02em}
+.brand h1{font-size:17px;margin:0;font-weight:800;letter-spacing:-.01em}
+.brand small{display:block;color:var(--muted);font-size:12px;font-weight:500}
+.sync{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--slot-empty)}
+.dot.on{background:var(--ok)} .dot.err{background:var(--danger)}
+button{font:inherit;cursor:pointer;border-radius:9px;border:1px solid var(--line);background:var(--surface);color:var(--fg);padding:8px 14px;font-weight:600}
+button:hover{border-color:var(--accent)}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+button.danger{color:var(--danger)}
+button:disabled{opacity:.5;cursor:not-allowed}
+.stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;padding-block:16px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.stat b{display:block;font-size:24px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.stat span{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+main .wrap{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;padding-block:0 32px;align-items:start}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;min-width:0}
+.panel-head{display:flex;gap:8px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.panel-head h2{font-size:14px;margin:0 auto 0 0;font-weight:700}
+.tabs{display:flex;gap:4px;background:var(--surface-2);padding:3px;border-radius:9px}
+.tabs button{border:0;background:transparent;padding:5px 12px;font-size:13px}
+.tabs button[aria-selected="true"]{background:var(--surface);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+input,select,textarea{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:9px 11px;width:100%}
+.search{padding:10px 14px;border-bottom:1px solid var(--line)}
+.tree{padding:8px 6px 14px;overflow-x:auto}
+.tree ul{list-style:none;margin:0;padding-left:20px;border-left:1px dashed var(--line);margin-left:14px}
+.tree>ul{border-left:0;padding-left:0;margin-left:0}
+.node{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:9px;cursor:pointer;min-width:0;white-space:nowrap}
+.node:hover{background:var(--surface-2)}
+.node.sel{background:var(--surface-2);box-shadow:inset 3px 0 0 var(--accent)}
+.tog{width:22px;height:22px;padding:0;border:0;background:transparent;color:var(--muted);font-size:12px;flex:none;border-radius:6px}
+.tog:hover{background:var(--line)}
+.tog.ph{visibility:hidden}
+.nm{font-weight:600;overflow:hidden;text-overflow:ellipsis}
+.code{font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+.slots{display:inline-flex;gap:3px;margin-left:auto;padding-left:10px;flex:none}
+.slots i{width:9px;height:9px;border-radius:3px;background:var(--slot-empty)}
+.slots i.f{background:var(--accent)}
+.slots.full i.f{background:var(--gold)}
+.lvl{font-size:11px;font-weight:700;color:var(--muted);background:var(--surface-2);padding:1px 7px;border-radius:99px;flex:none}
+.list{width:100%;border-collapse:collapse;font-size:14px}
+.list th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);padding:8px 12px;border-bottom:1px solid var(--line);font-weight:600}
+.list td{padding:9px 12px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums;white-space:nowrap}
+.list tr{cursor:pointer} .list tbody tr:hover td{background:var(--surface-2)}
+.tbl{overflow-x:auto}
+.empty{padding:28px 18px;text-align:center;color:var(--muted)}
+.empty b{display:block;color:var(--fg);font-size:16px;margin-bottom:4px}
+.side{display:flex;flex-direction:column;gap:16px;position:sticky;top:calc(env(safe-area-inset-top,0px) + 76px)}
+form{padding:14px;display:grid;gap:12px}
+label{display:grid;gap:5px;font-size:12px;font-weight:600;color:var(--muted)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.hint{font-size:12px;color:var(--muted);margin:-4px 0 0}
+.hint.bad{color:var(--danger);font-weight:600}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.detail{padding:14px;display:grid;gap:12px}
+.detail h3{margin:0;font-size:20px;font-weight:800;letter-spacing:-.01em;text-wrap:balance}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:14px}
+.kv dt{color:var(--muted)} .kv dd{margin:0;font-weight:500;min-width:0;overflow-wrap:anywhere}
+.slotbar{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.slotbar div{border:1px dashed var(--line);border-radius:9px;padding:7px 6px;font-size:12px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)}
+.slotbar div.f{border-style:solid;border-color:var(--accent);color:var(--fg);font-weight:600;cursor:pointer}
+.chip{display:inline-block;font-size:12px;font-weight:700;padding:2px 9px;border-radius:99px}
+.chip.full{background:color-mix(in srgb,var(--gold) 18%,transparent);color:var(--gold)}
+.chip.open{background:color-mix(in srgb,var(--ok) 15%,transparent);color:var(--ok)}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:600;font-size:14px;z-index:20;max-width:calc(100% - 32px)}
+.node.off .nm{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--muted)}
+.tag-off{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--danger);flex:none}
+.chip.on{background:color-mix(in srgb,var(--ok) 15%,transparent);color:var(--ok)}
+.chip.off{background:color-mix(in srgb,var(--danger) 12%,transparent);color:var(--danger)}
+.search{display:flex;gap:8px}
+.search select{width:auto;flex:none}
+.tools{display:flex;gap:8px;flex-wrap:wrap}
+.imp{padding:14px;display:grid;gap:10px;font-size:14px}
+.imp ul{margin:0;padding-left:18px;max-height:160px;overflow:auto;font-size:13px;color:var(--danger)}
+.imp .ok{color:var(--ok);font-weight:700}
+.banner{background:color-mix(in srgb,var(--accent) 10%,var(--surface));border:1px solid color-mix(in srgb,var(--accent) 35%,transparent);border-radius:12px;padding:10px 14px;font-size:14px;margin-block:0 16px}
+.banner b{color:var(--accent)}
+.who{color:var(--muted);font-size:13px}
+main .wrap.wide{grid-template-columns:minmax(0,1fr) 330px}
+.orgbar{display:flex;gap:8px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line);font-size:13px;color:var(--muted)}
+.orgbar .sp{margin-right:auto}
+.orgbar button{padding:5px 11px;font-size:13px}
+.orgwrap{overflow:auto;max-height:78vh;padding:18px 14px 24px}
+.org{zoom:1;width:max-content;min-width:100%;display:flex;flex-direction:column;gap:36px;align-items:center}
+.org ul{display:flex;justify-content:center;margin:0;padding:22px 0 0;position:relative}
+.org li{list-style:none;position:relative;padding:22px 5px 0;display:flex;flex-direction:column;align-items:center}
+.org li::before,.org li::after{content:"";position:absolute;top:0;right:50%;width:50%;height:22px;border-top:2px solid var(--line)}
+.org li::after{right:auto;left:50%;border-left:2px solid var(--line)}
+.org li:only-child::before,.org li:only-child::after{display:none}
+.org li:only-child{padding-top:0}
+.org li:first-child::before,.org li:last-child::after{border:0 none}
+.org li:last-child::before{border-right:2px solid var(--line);border-radius:0 8px 0 0}
+.org li:first-child::after{border-radius:8px 0 0 0}
+.org ul ul::before{content:"";position:absolute;top:0;left:50%;height:22px;border-left:2px solid var(--line)}
+.org>ul{padding-top:0}
+.org>ul>li{padding-top:0}
+.org>ul>li::before,.org>ul>li::after{display:none}
+.ob{background:var(--surface);border:1.5px solid var(--line);border-radius:10px;padding:7px 10px 8px;min-width:104px;max-width:150px;cursor:pointer;display:grid;gap:3px;justify-items:center;text-align:center}
+.ob:hover{border-color:var(--accent)}
+.ob.full{border-color:var(--gold)}
+.ob.sel{outline:2.5px solid var(--accent);outline-offset:2px}
+.ob.off{opacity:.55}
+.ob.hit{background:color-mix(in srgb,var(--accent) 12%,var(--surface))}
+.ob .nm{font-size:13px;line-height:1.25;white-space:normal;overflow-wrap:anywhere}
+.ob .lvl{font-size:10px}
+.ob .slots{margin:0;padding:0}
+.confirm{background:color-mix(in srgb,var(--danger) 10%,transparent);border:1px solid var(--danger);border-radius:10px;padding:10px;display:grid;gap:8px;font-size:13px}
+@media (max-width:820px){
+  main .wrap,main .wrap.wide{grid-template-columns:minmax(0,1fr)}
+  .orgbar{flex-wrap:wrap}
+  .side{position:static}
+  header{position:static}
+  .tools{width:100%}
+  .tools button{flex:1;padding:8px 10px}
+  .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .stats .stat:last-child{grid-column:1/-1}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.auth{min-height:100vh;display:grid;place-items:center;padding:24px max(16px,env(safe-area-inset-left,0px))}
+.auth .card{width:100%;max-width:380px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px;display:grid;gap:14px}
+.auth h1{margin:0;font-size:20px;font-weight:800}
+.auth .brand{margin:0}
+.linkbtn{background:none;border:0;padding:0;color:var(--accent);font-weight:600;cursor:pointer}
+body.locked #app{display:none}
+body:not(.locked) #authView{display:none}
+</style>
+</head>
+<body class="locked">
+<section class="auth" id="authView">
+  <div class="card">
+    <div class="brand"><div class="logo">AGA</div><div><h1 id="authTitle">Masuk</h1><small>AGA Pro Member · data jaringan</small></div></div>
+    <form id="authForm" novalidate style="padding:0">
+      <label>Email<input id="auEmail" type="email" autocomplete="email" required></label>
+      <label>Password<input id="auPass" type="password" autocomplete="current-password" minlength="6" required></label>
+      <p class="hint bad" id="auErr" hidden></p>
+      <div class="actions"><button class="primary" type="submit" id="auGo">Masuk</button></div>
+    </form>
+    <p class="hint" style="margin:0" id="auSwitch">Belum punya akun? <button type="button" class="linkbtn" id="auToggle">Daftar di sini</button></p>
+    <p class="hint" style="margin:0"><button type="button" class="linkbtn" id="auForgot">Lupa password?</button></p>
+  </div>
+</section>
+<div id="app">
+
+<header><div class="wrap">
+  <div class="brand"><div class="logo">AGA</div><div><h1>AGA Pro Member</h1><small>Data jaringan · 1 orang rekrut 5</small></div></div>
+  <div class="sync"><span class="dot" id="dot"></span><span id="syncTxt">Menghubungkan…</span></div>
+  <div class="tools">
+    <button type="button" id="btnImport">Import Excel</button>
+    <button type="button" id="btnExport">Export Excel</button>
+    <button class="primary" id="btnNew" type="button">+ Member baru</button>
+    <button type="button" id="btnOut">Keluar</button>
+  </div>
+  <input type="file" id="fileIn" accept=".xlsx,.xls,.csv" hidden>
+</div></header>
+
+<section class="wrap stats" aria-label="Ringkasan">
+  <div class="stat"><span>Total member</span><b id="stTotal">0</b></div>
+  <div class="stat"><span>Kedalaman level</span><b id="stDepth">0</b></div>
+  <div class="stat"><span>Member aktif</span><b id="stActive">0</b></div>
+  <div class="stat"><span>Sudah penuh 5/5</span><b id="stFull">0</b></div>
+  <div class="stat"><span>Gabung bulan ini</span><b id="stMonth">0</b></div>
+</section>
+
+<div class="wrap"><div class="banner" id="banner" hidden></div></div>
+<main><div class="wrap" id="mainWrap">
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Jaringan</h2>
+      <div class="tabs" id="scopeTabs" hidden>
+        <button type="button" id="scAll" aria-selected="true">Semua</button>
+        <button type="button" id="scMine" aria-selected="false">Jaringan saya</button>
+      </div>
+      <div class="tabs" role="tablist">
+        <button type="button" role="tab" id="tabTree" aria-selected="true">Pohon</button>
+        <button type="button" role="tab" id="tabList" aria-selected="false">Daftar</button>
+        <button type="button" role="tab" id="tabChart" aria-selected="false">Bagan</button>
+      </div>
+      <button type="button" id="btnExpand">Buka semua</button>
+    </div>
+    <div class="search"><input id="q" type="search" placeholder="Cari nama, kode, atau no. HP" autocomplete="off"><select id="fStat" aria-label="Filter status"><option value="">Semua status</option><option value="aktif">Aktif</option><option value="nonaktif">Nonaktif</option></select></div>
+    <div id="treeView" class="tree"></div>
+    <div id="listView" class="tbl" hidden></div>
+    <div id="chartView" hidden>
+      <div class="orgbar"><span class="sp" id="orgInfo"></span>
+        <button type="button" id="zOut" aria-label="Perkecil">−</button><button type="button" id="zFit">Pas layar</button><button type="button" id="zIn" aria-label="Perbesar">+</button></div>
+      <div class="orgwrap" id="orgWrap"><div class="org" id="org"></div></div>
+    </div>
+  </section>
+
+  <aside class="side">
+    <section class="panel" id="impPanel" hidden>
+      <div class="panel-head"><h2>Import dari Excel</h2><button type="button" id="impClose">Tutup</button></div>
+      <div class="imp" id="imp"></div>
+    </section>
+    <section class="panel" id="formPanel">
+      <div class="panel-head"><h2 id="formTitle">Tambah member</h2></div>
+      <form id="f" novalidate>
+        <label>Nama lengkap<input id="fName" required maxlength="80" placeholder="cth. Budi Santoso"></label>
+        <div class="row2">
+          <label>No. HP / WA<input id="fPhone" inputmode="tel" maxlength="20" placeholder="08xx"></label>
+          <label>Tanggal gabung<input id="fDate" type="date"></label>
+        </div>
+        <div class="row2">
+          <label>Kota<input id="fCity" maxlength="60" placeholder="cth. Medan"></label>
+          <label>Status<select id="fStatus"><option value="aktif">Aktif</option><option value="nonaktif">Nonaktif</option></select></label>
+        </div>
+        <div class="row2">
+          <label>Kode agen TM<input id="fTm" maxlength="40" autocomplete="off"></label>
+          <label>Kode agen AGA PRO<input id="fAga" maxlength="40" autocomplete="off"></label>
+        </div>
+        <label id="upCodeRow" hidden>Kode member perekrut<input id="fUpCode" maxlength="20" autocomplete="off" placeholder="cth. AGA0001"></label>
+        <label id="upSelRow">Direkrut oleh (upline)<select id="fUp"></select></label>
+        <p class="hint" id="upHint">Kosongkan jika ini member paling atas.</p>
+        <label>Catatan<textarea id="fNote" rows="2" maxlength="300"></textarea></label>
+        <div class="actions">
+          <button class="primary" type="submit" id="fSave">Simpan member</button>
+          <button type="button" id="fCancel" hidden>Batal edit</button>
+        </div>
+      </form>
+    </section>
+    <section class="panel" id="claimBox" hidden>
+      <div class="panel-head"><h2>Sudah didaftarkan?</h2></div>
+      <form id="cf" novalidate>
+        <p class="hint" style="margin:0">Kalau perekrutmu sudah memasukkan datamu, hubungkan akunmu dengan kode member dan no. HP yang tercatat.</p>
+        <div class="row2">
+          <label>Kode member kamu<input id="cCode" maxlength="20" autocomplete="off" placeholder="cth. AGA0007"></label>
+          <label>No. HP tercatat<input id="cPhone" inputmode="tel" maxlength="20"></label>
+        </div>
+        <div class="actions"><button type="submit" id="cGo">Hubungkan akun saya</button></div>
+      </form>
+    </section>
+    <section class="panel" id="accessPanel" hidden>
+      <div class="panel-head"><h2>Akses master dan lihat semua</h2></div>
+      <form id="af" novalidate>
+        <p class="hint" style="margin:0">Member lain hanya melihat jaringan di bawah mereka sendiri. Orang yang diberi akses harus sudah membuat akun di website ini.</p>
+        <div class="row2">
+          <label>Email<input id="aEmail" type="email" placeholder="nama@gmail.com" autocomplete="off"></label>
+          <label>Akses<select id="aRole"><option value="master">Master (akses penuh)</option><option value="viewer">Lihat semua jaringan</option></select></label>
+        </div>
+        <div class="actions"><button type="submit" id="aSave">Beri akses</button></div>
+        <div id="reqList"></div>
+      </form>
+    </section>
+    <section class="panel" id="reqPanel" hidden>
+      <div class="panel-head"><h2>Minta akses master</h2></div>
+      <form id="rf" novalidate>
+        <p class="hint" style="margin:0" id="reqHint">Untuk pengelola yang ditunjuk Steven. Setelah Steven menyetujui, kamu bisa melihat dan mengelola semua jaringan.</p>
+        <label>Nama kamu<input id="rName" maxlength="60" autocomplete="off"></label>
+        <div class="actions"><button type="submit" id="rGo">Kirim permintaan</button></div>
+      </form>
+    </section>
+    <section class="panel" id="detailPanel" hidden>
+      <div class="panel-head"><h2>Detail member</h2><button type="button" id="dClose">Tutup</button></div>
+      <div class="detail" id="detail"></div>
+    </section>
+  </aside>
+</div></main>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script>
+const MAX = 5;
+let sb = null, myRole = null, roleRows = [], masterReqs = [], recruiter = null, myEmail = null, canWrite = null, myId = null, iAmOwner = false, scope = "all", scopeSet = false;
+let db = null, members = new Map(), selected = null, editing = null, view = "tree", open = new Set(), loaded = false;
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const today = () => new Date().toISOString().slice(0,10);
+const fmtDate = d => { if(!d) return "-"; const [y,m,dd] = d.split("-"); return `${dd}/${m}/${y}`; };
+
+function toast(msg){ const t=$("toast"); t.textContent=msg; t.hidden=false; clearTimeout(toast._t); toast._t=setTimeout(()=>t.hidden=true,2600); }
+function setSync(state, txt){ $("dot").className = "dot " + state; $("syncTxt").textContent = txt; }
+
+// children index and levels are rebuilt once per data change, so big networks stay fast
+let childIdx = null, levelIdx = new Map();
+function kids(id){
+  if(!childIdx){ childIdx = new Map();
+    for(const m of members.values()){ const k = m.upline || null; if(!childIdx.has(k)) childIdx.set(k, []); childIdx.get(k).push(m); }
+    for(const list of childIdx.values()) list.sort((a,b)=>(a.joinDate||"").localeCompare(b.joinDate||"") || a.createdAt - b.createdAt); }
+  return childIdx.get(id) || [];
+}
+function level(m){
+  if(levelIdx.has(m.id)) return levelIdx.get(m.id);
+  let n=1, cur=m, guard=0; while(cur.upline && members.has(cur.upline) && guard++<5000){ n++; cur=members.get(cur.upline);}
+  levelIdx.set(m.id, n); return n;
+}
+function roots(){ return [...members.values()].filter(m => !m.upline || !members.has(m.upline)).sort((a,b)=>a.createdAt-b.createdAt); }
+function descendants(id){ const out=[]; const st=[id]; while(st.length){ const c=st.pop(); for(const k of kids(c)){ out.push(k.id); st.push(k.id);} } return out; }
+function nextCode(){ let max=0; for(const m of members.values()){ const n=parseInt((m.code||"").replace(/\D/g,""),10); if(n>max) max=n; } return "AGA" + String(max+1).padStart(4,"0"); }
+
+// owner and masters manage everything; viewers see the whole network; everyone else sees only their own downline
+function boss(){ return myRole === "owner" || myRole === "master"; }
+function roleLabel(){ return ({owner:"Pemilik", master:"Master", viewer:"Lihat semua"})[myRole] || "Member"; }
+function isGlobal(){ return !!myRole; }
+const roleOf = uid => roleRows.find(x => x.user_id === uid)?.role || null;
+function myMember(){ return myId ? [...members.values()].find(m => m.account === myId) || null : null; }
+function scopeIds(){ const me = myMember(); if(!isGlobal()) return me ? new Set([me.id, ...descendants(me.id)]) : new Set(); return scope==="mine" && me ? new Set([me.id, ...descendants(me.id)]) : null; }
+function scoped(){ const ids = scopeIds(); return [...members.values()].filter(m => !ids || ids.has(m.id)); }
+// Steven (owner) manages everything; a member manages themself and their own downline
+let teamCache = {key:null, set:null};
+function canManage(m){
+  if(boss()) return true; const me = myMember(); if(!me) return false;
+  kids(null); if(teamCache.key !== childIdx){ teamCache = {key: childIdx, set: new Set([me.id, ...descendants(me.id)])}; }
+  return teamCache.set.has(m.id);
+}
+const fromRow = x => ({id:x.id, code:x.code, name:x.name, phone:x.phone, city:x.city, agentTM:x.agent_tm, agentAGA:x.agent_aga, joinDate:x.join_date,
+  status:x.status, note:x.note, upline:x.upline, account:x.account, addedBy:x.added_by, createdAt:Date.parse(x.created_at)||0});
+const COLMAP = {id:"id", code:"code", name:"name", phone:"phone", city:"city", agentTM:"agent_tm", agentAGA:"agent_aga", joinDate:"join_date", status:"status", note:"note", upline:"upline", account:"account"};
+const toRow = d => Object.fromEntries(Object.entries(d).filter(([k,v]) => COLMAP[k] && v !== undefined).map(([k,v]) => [COLMAP[k], v]));
+async function must(p){ const {data, error} = await p; if(error) throw error; return data; }
+function fillNames(){
+  const linked = new Map([...members.values()].filter(m => m.account).map(m => [m.account, m.name]));
+  document.querySelectorAll("[data-uid]").forEach(e => { const id = e.dataset.uid; e.textContent = id === myId ? "Kamu" : (linked.get(id) || roleRows.find(x => x.user_id === id)?.name || "Pengelola"); });
+}
+const uidSpan = id => id ? `<span data-uid="${esc(id)}">…</span>` : "-";
+function renderBanner(){
+  const b = $("banner"), me = myMember();
+  if(!db){ b.hidden = true; return; }
+  if(me){ b.hidden = boss(); b.innerHTML = `Kamu masuk sebagai <b>${esc(me.name)}</b> (${esc(me.code)}). Kamu melihat dan mengelola jaringan di bawahmu sendiri.`; return; }
+  if(boss()){ b.hidden = true; return; }
+  b.hidden = false;
+  b.innerHTML = `Akunmu belum terhubung ke data member. Isi formulir <b>Daftarkan diri kamu</b> dengan kode member perekrutmu. Kalau perekrutmu sudah mendaftarkan kamu, isi bagian <b>Sudah didaftarkan?</b> dengan kode member dan no. HP kamu.`;
+}
+function slotsHtml(n){ return `<span class="slots ${n>=MAX?"full":""}" title="${n} dari ${MAX} rekrutan">${Array.from({length:MAX},(_,i)=>`<i class="${i<n?"f":""}"></i>`).join("")}</span>`; }
+
+function render(){
+  const me = myMember();
+  const glob = isGlobal();
+  if(!glob){ scope = "mine"; if(me && render.openedFor !== me.id){ open.add(me.id); render.openedFor = me.id; } }
+  else { if(me && !scopeSet && !boss()){ scope = "mine"; scopeSet = true; } if(!me) scope = "all"; }
+  $("scopeTabs").hidden = !me || !glob;
+  $("accessPanel").hidden = !boss(); $("claimBox").hidden = !selfReg(); $("scAll").setAttribute("aria-selected", scope==="all"); $("scMine").setAttribute("aria-selected", scope==="mine");
+  $("btnImport").hidden = !boss();
+  renderRequests();
+  renderBanner(); renderStats(); renderUplineOptions();
+  view==="tree" ? renderTree() : view==="list" ? renderList() : renderChart();
+  if(selected && !members.has(selected)){ selected=null; $("detailPanel").hidden=true; }
+  if(selected) renderDetail();
+  fillNames();
+}
+function renderStats(){
+  const all=scoped();
+  $("stTotal").textContent = all.length;
+  $("stDepth").textContent = all.length ? Math.max(...all.map(level)) : 0;
+  $("stActive").textContent = all.filter(m=>!isOff(m)).length;
+  $("stFull").textContent = all.filter(m=>kids(m.id).length>=MAX).length;
+  const ym = today().slice(0,7);
+  $("stMonth").textContent = all.filter(m=>(m.joinDate||"").startsWith(ym)).length;
+}
+const isOff = m => m.status==="nonaktif";
+function matches(m,q){ const st=$("fStat").value; if(st && (isOff(m)?"nonaktif":"aktif")!==st) return false; return !q || [m.name,m.code,m.phone,m.city,m.agentTM,m.agentAGA].some(v => (v||"").toLowerCase().includes(q)); }
+
+function renderTree(){
+  const el=$("treeView");
+  if(!members.size){ el.innerHTML = emptyHtml(); return; }
+  if(!isGlobal() && !myMember()){ el.innerHTML = lockedHtml(); return; }
+  const q=$("q").value.trim().toLowerCase(), filt = q || $("fStat").value;
+  let show=null;
+  if(filt){ show=new Set(); for(const m of scoped()) if(matches(m,q)){ let c=m; while(c){ show.add(c.id); c = c.upline ? members.get(c.upline) : null; } } }
+  const build = list => `<ul>${list.filter(m=>!show||show.has(m.id)).map(m=>{
+    const ks=kids(m.id), isOpen = filt ? true : open.has(m.id);
+    return `<li><div class="node ${selected===m.id?"sel":""} ${isOff(m)?"off":""}" data-id="${m.id}">
+      <button type="button" class="tog ${ks.length?"":"ph"}" data-tog="${m.id}" aria-label="${isOpen?"Tutup":"Buka"} downline">${isOpen?"▾":"▸"}</button>
+      <span class="lvl">L${level(m)}</span><span class="nm">${esc(m.name)}</span><span class="code">${esc(m.code)}</span>${isOff(m)?`<span class="tag-off">Nonaktif</span>`:""}${slotsHtml(ks.length)}
+    </div>${ks.length && isOpen ? build(ks) : ""}</li>`; }).join("")}</ul>`;
+  const me = scope==="mine" ? myMember() : null;
+  const html = build(me ? [me] : roots());
+  el.innerHTML = html==="<ul></ul>" ? `<div class="empty">Tidak ada member yang cocok dengan pencarian ini.</div>` : html;
+}
+function renderList(){
+  const el=$("listView");
+  if(!members.size){ el.innerHTML = emptyHtml(); return; }
+  if(!isGlobal() && !myMember()){ el.innerHTML = lockedHtml(); return; }
+  const q=$("q").value.trim().toLowerCase();
+  const rows=scoped().filter(m=>matches(m,q)).sort((a,b)=>(a.code||"").localeCompare(b.code||""));
+  if(!rows.length){ el.innerHTML=`<div class="empty">Tidak ada member yang cocok dengan pencarian ini.</div>`; return; }
+  const LIMIT = 300, total = rows.length; rows.length = Math.min(total, LIMIT);
+  el.innerHTML = (total > LIMIT ? `<p class="hint" style="padding:10px 14px;margin:0">Menampilkan ${LIMIT} dari ${total} member. Pakai pencarian untuk menemukan yang lain, atau Export Excel untuk daftar lengkap.</p>` : "") + `<table class="list"><thead><tr><th>Kode</th><th>Nama</th><th>Level</th><th>Upline</th><th>No. HP</th><th>Agen TM</th><th>Agen AGA PRO</th><th>Gabung</th><th>Status</th><th>Rekrut</th><th>Diinput oleh</th></tr></thead><tbody>${
+    rows.map(m=>{ const up=members.get(m.upline); return `<tr data-id="${m.id}"><td class="code">${esc(m.code)}</td><td><b>${esc(m.name)}</b></td><td>L${level(m)}</td><td>${up?esc(up.name):"-"}</td><td>${esc(m.phone||"-")}</td><td class="code">${esc(m.agentTM||"-")}</td><td class="code">${esc(m.agentAGA||"-")}</td><td>${fmtDate(m.joinDate)}</td><td><span class="chip ${isOff(m)?"off":"on"}">${isOff(m)?"Nonaktif":"Aktif"}</span></td><td>${kids(m.id).length}/${MAX}</td><td class="who">${uidSpan(m.addedBy)}</td></tr>`; }).join("")
+  }</tbody></table>`;
+}
+let zoom = 1;
+function renderChart(){
+  const el=$("org");
+  if(members.size && !isGlobal() && !myMember()){ el.innerHTML = lockedHtml(); $("orgInfo").textContent=""; return; }
+  if(!members.size){ el.innerHTML = emptyHtml(); $("orgInfo").textContent=""; return; }
+  const q=$("q").value.trim().toLowerCase(), st=$("fStat").value;
+  const me = scope==="mine" ? myMember() : null, tops = me ? [me] : roots();
+  const box = m => { const n=kids(m.id).length, hit=(q||st) && matches(m,q);
+    return `<div class="ob ${n>=MAX?"full":""} ${isOff(m)?"off":""} ${selected===m.id?"sel":""} ${hit?"hit":""}" data-id="${m.id}" title="${esc(m.name)} · ${esc(m.code)}">
+      <span class="lvl">L${level(m)} · ${esc(m.code)}</span><span class="nm">${esc(m.name)}</span>${slotsHtml(n)}</div>`; };
+  const build = m => { const ks=kids(m.id); return `<li>${box(m)}${ks.length?`<ul>${ks.map(build).join("")}</ul>`:""}</li>`; };
+  el.innerHTML = tops.map(t=>`<ul>${build(t)}</ul>`).join("");
+  el.style.zoom = zoom;
+  const lines = tops.length, cnt = tops.reduce((a,t)=>a+1+descendants(t.id).length,0);
+  $("orgInfo").textContent = `${lines} line utama · ${cnt} member · ${Math.round(zoom*100)}%`;
+}
+function setZoom(z){ zoom=Math.min(1.5,Math.max(0.2,Math.round(z*100)/100)); renderChart(); }
+function renderRequests(){
+  const mine = masterReqs.some(q => q.user_id === myId);
+  $("reqPanel").hidden = !db || boss();
+  $("rGo").disabled = mine; $("reqHint").textContent = mine ? "Permintaanmu sudah terkirim. Tunggu Steven menyetujuinya, lalu refresh halaman ini." : "Untuk pengelola yang ditunjuk Steven. Setelah Steven menyetujui, kamu bisa melihat dan mengelola semua jaringan.";
+  const el = $("reqList"); if(!boss()){ el.innerHTML = ""; return; }
+  const row = (q, btns) => `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:6px 0;border-top:1px solid var(--line)"><span style="margin-right:auto;min-width:0"><b>${esc(q.name||q.email||"Tanpa nama")}</b> <span class="who">${esc(q.name ? q.email||"" : "")}</span></span>${btns}</div>`;
+  const others = roleRows.filter(x => x.role !== "owner");
+  el.innerHTML = (masterReqs.length ? `<p class="hint" style="margin:8px 0 0"><b>Permintaan master</b></p>` + masterReqs.map(q => row(q, `<button type="button" data-ok="${esc(q.user_id)}">Setujui</button><button type="button" class="danger" data-no="${esc(q.user_id)}">Tolak</button>`)).join("") : "")
+    + (others.length ? `<p class="hint" style="margin:8px 0 0"><b>Akses yang sudah diberikan</b></p>` + others.map(x => row({name: (x.name||"") + (x.role === "master" ? " · Master" : " · Lihat semua"), email: x.email}, x.user_id === myId ? "" : `<button type="button" class="danger" data-rm="${esc(x.user_id)}">Cabut</button>`)).join("") : "");
+  el.querySelectorAll("[data-ok]").forEach(b => b.onclick = () => accessAction(sb.rpc("approve_request", {p_user: b.dataset.ok}), "Master disetujui"));
+  el.querySelectorAll("[data-no]").forEach(b => b.onclick = () => accessAction(sb.from("master_requests").delete().eq("user_id", b.dataset.no), "Permintaan ditolak"));
+  el.querySelectorAll("[data-rm]").forEach(b => b.onclick = () => accessAction(sb.from("roles").delete().eq("user_id", b.dataset.rm), "Akses dicabut"));
+}
+async function accessAction(p, msg){
+  try{ await must(p); if(msg) toast(msg); await loadAccess(); render(); }
+  catch(e){ toast(errMsg(e)); }
+}
+function lockedHtml(){ return `<div class="empty"><b>Jaringanmu akan tampil di sini</b>Daftarkan dirimu dulu, atau hubungkan akunmu ke data yang sudah dibuat perekrutmu.</div>`; }
+function emptyHtml(){ return `<div class="empty"><b>Belum ada member</b>Mulai dengan menambahkan member paling atas lewat formulir “Tambah member”, lalu tambahkan 5 rekrutannya.</div>`; }
+
+// a signed-in member who has not linked a record yet registers themself under any recruiter
+const selfReg = () => !boss() && !!myId && !myMember() && !editing;
+const noIdentity = () => false;
+function renderUplineOptions(){
+  const sel=$("fUp"), cur = sel.value, upCode = $("fUpCode").value.trim().toUpperCase();
+  $("upCodeRow").hidden = !selfReg(); $("upSelRow").hidden = selfReg();
+  if(!editing) $("formTitle").textContent = selfReg() ? "Daftarkan diri kamu" : "Tambah member";
+  $("fSave").disabled = noIdentity() || (canWrite === false && !boss());
+  const excluded = editing ? new Set([editing, ...descendants(editing)]) : new Set();
+  const opts=[...members.values()].filter(m=>!excluded.has(m.id) && canManage(m)).sort((a,b)=>(a.code||"").localeCompare(b.code||""));
+  sel.innerHTML = (boss() || !db ? `<option value="">— Tidak ada (member paling atas) —</option>` : "") + opts.map(m=>{
+    const n = kids(m.id).filter(k=>k.id!==editing).length, full = n>=MAX;
+    return `<option value="${m.id}" ${full?"disabled":""}>${esc(m.code)} · ${esc(m.name)} (${n}/${MAX}${full?" penuh":""})</option>`;
+  }).join("");
+  if([...sel.options].some(o=>o.value===cur && !o.disabled)) sel.value=cur;
+  updateUpHint();
+}
+function updateUpHint(){
+  const id=$("fUp").value, h=$("upHint");
+  if(noIdentity()){ h.textContent="Akunmu belum terbaca. Buka link ini sambil masuk ke akun Claude dengan email yang diundang."; h.className="hint bad"; return; }
+  if(selfReg()){
+    if(recruiter){ const n = recruiter.used; h.textContent = `Perekrutmu: ${recruiter.name} (${recruiter.code}). Sisa slot ${MAX-n} dari ${MAX}.`; h.className = "hint" + (MAX-n<=0?" bad":""); }
+    else { h.textContent = $("fUpCode").value.trim() ? "Kode perekrut tidak ditemukan. Tanyakan kode member (AGA…) ke perekrutmu." : "Ketik kode member perekrutmu, nama perekrut akan muncul di sini."; h.className="hint"; }
+    return; }
+  if(!boss() && !myMember() && !editing){ h.textContent=""; return; }
+  if(!id){ h.textContent="Kosongkan jika ini member paling atas."; h.className="hint"; return; }
+  const n = kids(id).filter(k=>k.id!==editing).length;
+  h.textContent = `Sisa slot: ${MAX-n} dari ${MAX}.`; h.className = "hint" + (MAX-n<=0?" bad":"");
+}
+
+function renderDetail(){
+  const m=members.get(selected); if(!m) return;
+  const ks=kids(m.id), up=members.get(m.upline), down=descendants(m.id).length;
+  const can = canManage(m), claimable = boss() && !m.account && !myMember(), accRole = m.account ? roleOf(m.account) : null;
+  $("detailPanel").hidden=false;
+  $("detail").innerHTML = `
+    <div><span class="code">${esc(m.code)} · Level ${level(m)}</span><h3>${esc(m.name)}</h3><span class="chip ${isOff(m)?"off":"on"}">${isOff(m)?"Nonaktif":"Aktif"}</span></div>
+    <dl class="kv">
+      <dt>No. HP</dt><dd>${esc(m.phone||"-")}</dd>
+      <dt>Kota</dt><dd>${esc(m.city||"-")}</dd>
+      <dt>Kode agen TM</dt><dd>${esc(m.agentTM||"-")}</dd>
+      <dt>Kode agen AGA PRO</dt><dd>${esc(m.agentAGA||"-")}</dd>
+      <dt>Gabung</dt><dd>${fmtDate(m.joinDate)}</dd>
+      <dt>Upline</dt><dd>${up?`${esc(up.name)} <span class="code">${esc(up.code)}</span>`:"Member paling atas"}</dd>
+      <dt>Total downline</dt><dd>${down} orang</dd>
+      <dt>Diinput oleh</dt><dd>${uidSpan(m.addedBy)}</dd>
+      <dt>Akun</dt><dd>${m.account ? uidSpan(m.account) : "Belum terhubung"}</dd>
+      ${accRole === "owner" ? `<dt>Akses</dt><dd>Pemilik</dd>` : accRole === "master" ? `<dt>Akses</dt><dd>Master</dd>` : accRole === "viewer" ? `<dt>Akses</dt><dd>Lihat semua jaringan</dd>` : ""}
+      ${m.note?`<dt>Catatan</dt><dd>${esc(m.note)}</dd>`:""}
+    </dl>
+    <div><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><b style="font-size:13px">Rekrutan langsung</b><span class="chip ${ks.length>=MAX?"full":"open"}">${ks.length}/${MAX} ${ks.length>=MAX?"Penuh":"Terbuka"}</span></div>
+      <div class="slotbar">${Array.from({length:MAX},(_,i)=>ks[i]?`<div class="f" data-go="${ks[i].id}" title="${esc(ks[i].name)}">${esc(ks[i].name.split(" ")[0])}</div>`:`<div>Kosong</div>`).join("")}</div></div>
+    <div class="actions">
+      ${can ? `<button type="button" class="primary" id="dAdd" ${ks.length>=MAX?"disabled":""}>+ Rekrut di bawahnya</button>
+      <button type="button" id="dEdit">Edit</button>
+      ${boss() || m.id!==myMember()?.id ? `<button type="button" class="danger" id="dDel">Hapus</button>` : ""}` : ""}
+      ${claimable ? `<button type="button" id="dClaim">Ini saya</button>` : ""}
+      ${boss() && m.account ? `<button type="button" id="dUnlink">Lepas akun</button>` : ""}
+      ${boss() && m.account && accRole !== "owner" && m.account !== myId ? `<button type="button" id="dMaster">${accRole === "master" ? "Cabut master" : "Jadikan master"}</button>
+      <button type="button" id="dGlobal">${accRole === "viewer" ? "Cabut akses lihat semua" : "Beri akses lihat semua"}</button>` : ""}
+    </div>
+    <div id="dConfirm"></div>`;
+  if($("dAdd")) $("dAdd").onclick=()=>{ resetForm(); $("fUp").value=m.id; updateUpHint(); $("formPanel").scrollIntoView({behavior:"smooth",block:"start"}); $("fName").focus(); };
+  if($("dEdit")) $("dEdit").onclick=()=>startEdit(m.id);
+  if($("dDel")) $("dDel").onclick=()=>askDelete(m.id);
+  if($("dClaim")) $("dClaim").onclick=()=>claim(m.id);
+  const setRole = role => role === accRole
+    ? accessAction(sb.from("roles").delete().eq("user_id", m.account), "Akses dicabut")
+    : accessAction(sb.from("roles").upsert({user_id: m.account, role, name: m.name}), role === "master" ? `${m.name} sekarang master` : `${m.name} sekarang bisa melihat semua jaringan`);
+  if($("dMaster")) $("dMaster").onclick=()=>setRole("master");
+  if($("dGlobal")) $("dGlobal").onclick=()=>setRole("viewer");
+  if($("dUnlink")) $("dUnlink").onclick=async()=>{ try{ await updateMember(m.id, {account:null}); toast("Akun dilepas"); }catch(e){ toast(errMsg(e)); } };
+  $("detail").querySelectorAll("[data-go]").forEach(d=>d.onclick=()=>select(d.dataset.go));
+}
+async function claim(id){
+  const m=members.get(id);
+  try{ await updateMember(id, {account:myId}); scope="mine"; scopeSet=true; toast(`Kamu terhubung sebagai ${m.name}`); }
+  catch(e){ toast(errMsg(e)); }
+}
+function askDelete(id){
+  const m=members.get(id), ks=kids(id), box=$("dConfirm");
+  if(ks.length){ box.innerHTML=`<div class="confirm">${esc(m.name)} masih punya ${ks.length} rekrutan langsung. Pindahkan atau hapus rekrutannya dulu sebelum menghapus member ini.</div>`; return; }
+  box.innerHTML=`<div class="confirm">Hapus ${esc(m.name)} (${esc(m.code)}) dari data? Ini tidak bisa dibatalkan.<div class="actions"><button type="button" class="danger" id="cYes">Ya, hapus</button><button type="button" id="cNo">Batal</button></div></div>`;
+  $("cNo").onclick=()=>box.innerHTML="";
+  $("cYes").onclick=async()=>{ try{ await must(sb.from("members").delete().eq("id", id)); await loadMembers(); selected=null; $("detailPanel").hidden=true; toast("Member dihapus"); }catch(e){ toast(errMsg(e)); } };
+}
+function select(id){ selected=id; let c=members.get(id); while(c && c.upline){ open.add(c.upline); c=members.get(c.upline);} render(); if(innerWidth<=820) $("detailPanel").scrollIntoView({behavior:"smooth",block:"start"}); }
+function startEdit(id){
+  const m=members.get(id); editing=id;
+  $("formTitle").textContent="Edit member"; $("fSave").textContent="Simpan perubahan"; $("fCancel").hidden=false;
+  $("fName").value=m.name||""; $("fPhone").value=m.phone||""; $("fDate").value=m.joinDate||""; $("fCity").value=m.city||""; $("fTm").value=m.agentTM||""; $("fAga").value=m.agentAGA||""; $("fStatus").value=isOff(m)?"nonaktif":"aktif"; $("fNote").value=m.note||"";
+  renderUplineOptions();
+  const lockUp = !boss() && myMember()?.id === id;
+  if(lockUp){ const up=members.get(m.upline); $("fUp").innerHTML=`<option value="${esc(m.upline||"")}">${up?esc(up.code+" · "+up.name):"— Tidak ada —"}</option>`; }
+  $("fUp").disabled = lockUp; $("fUp").value=m.upline||""; updateUpHint();
+  $("formPanel").scrollIntoView({behavior:"smooth",block:"start"}); $("fName").focus();
+}
+function resetForm(){
+  editing=null; $("f").reset(); $("fDate").value=today(); $("fUp").disabled=false;
+  $("formTitle").textContent="Tambah member"; $("fSave").textContent="Simpan member"; $("fCancel").hidden=true;
+  renderUplineOptions();
+}
+function errMsg(e){
+  const msg = (e && (e.message || e.error_description)) || "";
+  if(/row-level security|permission denied/i.test(msg)) return "Kamu tidak punya akses untuk perubahan ini.";
+  if(/Failed to fetch|NetworkError|network/i.test(msg)) return "Gagal terhubung. Periksa koneksi lalu coba lagi.";
+  if(msg && /[a-z]/i.test(msg) && msg.length < 140) return msg;
+  return "Gagal menyimpan. Coba lagi.";
+}
+async function insertMember(d){ const row = await must(sb.from("members").insert(toRow(d)).select().single()); await loadMembers(); return row.id; }
+async function updateMember(id, d){ await must(sb.from("members").update(toRow(d)).eq("id", id)); await loadMembers(); }
+
+$("f").addEventListener("submit", async e=>{
+  e.preventDefault();
+  if(!db){ toast("Data belum terhubung. Tunggu sebentar."); return; }
+  const name=$("fName").value.trim(); if(!name){ $("fName").focus(); toast("Nama wajib diisi"); return; }
+  const reg = selfReg(), upline = reg ? (recruiter?.id || null) : ($("fUp").value||null);
+  if(reg && !upline){ $("fUpCode").focus(); toast("Ketik kode member perekrutmu dulu"); return; }
+  if(!boss() && !reg && !(upline ? canManage(members.get(upline)||{}) : editing && myMember()?.id===editing)){ toast("Kamu hanya bisa menambah member di jaringanmu sendiri"); return; }
+  if(upline && (reg ? recruiter.used : kids(upline).filter(k=>k.id!==editing).length)>=MAX){ toast(`${reg ? recruiter.name : members.get(upline).name} sudah punya ${MAX} rekrutan`); return; }
+  const data={ name, phone:$("fPhone").value.trim(), joinDate:$("fDate").value||today(), city:$("fCity").value.trim(), agentTM:$("fTm").value.trim(), agentAGA:$("fAga").value.trim(), status:$("fStatus").value, note:$("fNote").value.trim(), upline };
+  $("fSave").disabled=true;
+  try{
+    if(editing){ await updateMember(editing, data); toast("Perubahan disimpan"); selected=editing; }
+    else if(reg){ const id = await must(sb.rpc("register_self", {p_upline_code: recruiter.code, p_name: data.name, p_phone: data.phone, p_city: data.city,
+        p_agent_tm: data.agentTM, p_agent_aga: data.agentAGA, p_join_date: data.joinDate, p_note: data.note})); recruiter = null; $("fUpCode").value = ""; await loadMembers(); selected = id;
+      scope="mine"; scopeSet=true; toast(`Selamat datang, ${name}. Sekarang kamu bisa input rekrutanmu.`); }
+    else { const id = await insertMember(data); if(upline) open.add(upline); selected=id;
+      toast(`${name} ditambahkan`); }
+    resetForm();
+  }catch(err){ toast(errMsg(err)); }
+  finally{ $("fSave").disabled=false; }
+});
+$("fCancel").onclick=resetForm;
+$("fUp").onchange=updateUpHint;
+$("fUpCode").addEventListener("input", () => {
+  clearTimeout(lookupT); recruiter = null; updateUpHint();
+  const code = $("fUpCode").value.trim(); if(code.length < 4 || !sb) return;
+  lookupT = setTimeout(async () => { try{ const rows = await must(sb.rpc("recruiter_lookup", {p_code: code})); if($("fUpCode").value.trim() === code){ recruiter = rows[0] || null; updateUpHint(); } }catch(e){} }, 350);
+});
+let lookupT = null;
+$("cf").addEventListener("submit", async e=>{
+  e.preventDefault();
+  try{ const id = await must(sb.rpc("claim_member", {p_code: $("cCode").value, p_phone: $("cPhone").value})); await loadMembers(); selected = id; scope="mine"; scopeSet=true; toast("Akunmu sudah terhubung"); render(); }
+  catch(err){ toast(errMsg(err)); }
+});
+$("rf").addEventListener("submit", async e=>{
+  e.preventDefault();
+  const name=$("rName").value.trim(); if(!name){ $("rName").focus(); toast("Isi namamu dulu"); return; }
+  await accessAction(sb.from("master_requests").upsert({user_id: myId, name, email: myEmail || ""}), "Permintaan terkirim ke Steven");
+});
+$("af").addEventListener("submit", async e=>{
+  e.preventDefault();
+  const email = $("aEmail").value.trim(); if(!email.includes("@")){ $("aEmail").focus(); toast("Isi email yang benar"); return; }
+  await accessAction(sb.rpc("grant_role", {p_email: email, p_role: $("aRole").value}), "Akses diberikan"); $("aEmail").value = "";
+});
+$("btnNew").onclick=()=>{ resetForm(); $("formPanel").scrollIntoView({behavior:"smooth",block:"start"}); $("fName").focus(); };
+$("dClose").onclick=()=>{ selected=null; $("detailPanel").hidden=true; render(); };
+$("q").addEventListener("input", render);
+$("fStat").addEventListener("change", render);
+$("btnExpand").onclick=()=>{ const allOpen=[...members.keys()].every(id=>!kids(id).length||open.has(id)); if(allOpen){ open.clear(); $("btnExpand").textContent="Buka semua"; } else { members.forEach((_,id)=>open.add(id)); $("btnExpand").textContent="Tutup semua"; } render(); };
+function setView(v){ view=v; $("tabTree").setAttribute("aria-selected",v==="tree"); $("tabList").setAttribute("aria-selected",v==="list"); $("tabChart").setAttribute("aria-selected",v==="chart");
+  $("treeView").hidden=v!=="tree"; $("listView").hidden=v!=="list"; $("chartView").hidden=v!=="chart"; $("btnExpand").hidden=v!=="tree";
+  $("mainWrap").classList.toggle("wide", v==="chart"); render(); if(v==="chart" && !setView.fitted){ setView.fitted=true; fit(); } }
+function fit(){ const el=$("org"); el.style.zoom=1; const w=el.scrollWidth, avail=$("orgWrap").clientWidth-28; setZoom(w>avail ? Math.max(0.4, avail/w) : 1); }
+$("zIn").onclick=()=>setZoom(zoom+0.1); $("zOut").onclick=()=>setZoom(zoom-0.1); $("zFit").onclick=fit;
+$("scAll").onclick=()=>{ scope="all"; scopeSet=true; render(); }; $("scMine").onclick=()=>{ scope="mine"; scopeSet=true; render(); };
+$("tabTree").onclick=()=>setView("tree"); $("tabList").onclick=()=>setView("list"); $("tabChart").onclick=()=>setView("chart");
+document.addEventListener("click", e=>{
+  const t=e.target.closest("[data-tog]"); if(t){ const id=t.dataset.tog; open.has(id)?open.delete(id):open.add(id); render(); return; }
+  const n=e.target.closest(".node[data-id], tr[data-id], .ob[data-id]"); if(n) select(n.dataset.id);
+});
+
+// ---- Export / Import Excel ----
+const COLS = ["Kode","Nama","No HP","Kota","Kode Agen TM","Kode Agen AGA PRO","Tanggal Gabung","Status","Kode Upline","Nama Upline","Level","Jumlah Rekrut","Catatan"];
+async function saveXlsx(filename, rows){
+  if(!window.XLSX){ toast("Modul Excel belum termuat. Coba lagi sebentar."); return; }
+  const ws = XLSX.utils.json_to_sheet(rows, {header: COLS});
+  ws["!cols"] = COLS.map(c => ({wch: Math.max(c.length, c==="Nama"||c==="Nama Upline"||c==="Catatan" ? 24 : 12)}));
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Member");
+  XLSX.writeFile(wb, filename);
+}
+function exportRows(){
+  return scoped().sort((a,b)=>(a.code||"").localeCompare(b.code||"")).map(m=>{
+    const up = members.get(m.upline);
+    return {"Kode":m.code||"","Nama":m.name||"","No HP":m.phone||"","Kota":m.city||"","Kode Agen TM":m.agentTM||"","Kode Agen AGA PRO":m.agentAGA||"","Tanggal Gabung":fmtDate(m.joinDate),
+      "Status":isOff(m)?"Nonaktif":"Aktif","Kode Upline":up?up.code:"","Nama Upline":up?up.name:"","Level":level(m),"Jumlah Rekrut":kids(m.id).length,"Catatan":m.note||""};
+  });
+}
+$("btnExport").onclick = () => {
+  if(!members.size){ toast("Belum ada data untuk diexport"); return; }
+  saveXlsx(`member-aga-pro-${today()}.xlsx`, exportRows());
+};
+function normDate(v){
+  if(v instanceof Date && !isNaN(v)) return new Date(v.getTime()-v.getTimezoneOffset()*60000).toISOString().slice(0,10);
+  const s = String(v ?? "").trim(); if(!s) return "";
+  let m = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/); if(m) return `${m[3]}-${m[2].padStart(2,"0")}-${m[1].padStart(2,"0")}`;
+  m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/); if(m) return `${m[1]}-${m[2].padStart(2,"0")}-${m[3].padStart(2,"0")}`;
+  return null;
+}
+const pick = (row, ...names) => { for(const k of Object.keys(row)){ const n=k.toLowerCase().replace(/[^a-z]/g,""); if(names.includes(n)) return String(row[k] ?? "").trim(); } return ""; };
+let pending = null;
+$("btnImport").onclick = () => { if(!db){ toast("Data belum terhubung. Tunggu sebentar."); return; } $("fileIn").value=""; $("fileIn").click(); };
+$("impClose").onclick = () => { pending=null; $("impPanel").hidden=true; };
+$("fileIn").onchange = async e => {
+  const file = e.target.files[0]; if(!file) return;
+  if(!window.XLSX){ toast("Modul Excel belum termuat. Coba lagi sebentar."); return; }
+  try{
+    const isText = /\.(csv|txt)$/i.test(file.name);
+    // CSV stays as text so 03/10/2026 is read as 3 Oktober, not March 10
+    const wb = XLSX.read(await file.arrayBuffer(), {cellDates:true, raw:isText});
+    const raw = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {defval:"", raw:true});
+    pending = planImport(raw); showImport(file.name);
+  }catch(err){ toast("File tidak bisa dibaca. Pastikan formatnya .xlsx atau .csv"); }
+};
+function planImport(raw){
+  const errors=[], plan=[];
+  const byCode = new Map([...members.values()].filter(m=>m.code).map(m=>[m.code.toUpperCase(), m.id]));
+  const byName = new Map(); for(const m of members.values()){ const k=(m.name||"").toLowerCase(); byName.set(k, byName.has(k)?"dup":m.id); }
+  const count = new Map(); for(const m of members.values()) if(m.upline) count.set(m.upline,(count.get(m.upline)||0)+1);
+  let codeNo = 0; for(const m of members.values()){ const n=parseInt((m.code||"").replace(/\D/g,""),10); if(n>codeNo) codeNo=n; }
+  const rows = raw.map((r,i)=>({line:i+2, name:pick(r,"nama","namalengkap","name"), code:pick(r,"kode","kodemember","id").toUpperCase(),
+    phone:pick(r,"nohp","hp","nohpwa","telepon","wa","nowa"), city:pick(r,"kota","city"), agentTM:pick(r,"kodeagentm","agentm","kodetm"), agentAGA:pick(r,"kodeagenagapro","agenagapro","kodeagapro"),
+    dateRaw:(()=>{ for(const k of Object.keys(r)) if(/tanggal|tgl|gabung|join/i.test(k)) return r[k]; return ""; })(),
+    status:/non|tidak/i.test(pick(r,"status"))?"nonaktif":"aktif", upCode:pick(r,"kodeupline").toUpperCase(),
+    upName:pick(r,"namaupline","upline","perekrut","direkrutoleh"), note:pick(r,"catatan","note","keterangan")})).filter(r=>r.name||r.code);
+  for(const r of rows){ if(!r.name){ errors.push(`Baris ${r.line}: nama kosong`); r.skip=true; continue; }
+    if(r.code && byCode.has(r.code)){ errors.push(`Baris ${r.line}: kode ${r.code} sudah ada, dilewati`); r.skip=true; continue; }
+    r.id = crypto.randomUUID(); if(r.code) byCode.set(r.code, r.id); }
+  const fileNames = new Map(); for(const r of rows) if(!r.skip){ const k=r.name.toLowerCase(); fileNames.set(k, fileNames.has(k)?"dup":r.id); }
+  const done = new Set(); let progress = true, left = rows.filter(r=>!r.skip);
+  // add rows in upline-first order so each upline exists before its recruits
+  while(left.length && progress){ progress=false; const next=[];
+    for(const r of left){
+      let up = null;
+      if(r.upCode){ up = byCode.get(r.upCode); if(!up){ errors.push(`Baris ${r.line} (${r.name}): kode upline ${r.upCode} tidak ditemukan`); progress=true; continue; } }
+      else if(r.upName){ const k=r.upName.toLowerCase(); up = fileNames.get(k) ?? byName.get(k);
+        if(!up){ errors.push(`Baris ${r.line} (${r.name}): upline "${r.upName}" tidak ditemukan`); progress=true; continue; }
+        if(up==="dup"){ errors.push(`Baris ${r.line} (${r.name}): ada lebih dari satu "${r.upName}", pakai kolom Kode Upline`); progress=true; continue; } }
+      const upIsNew = up && rows.some(x=>x.id===up);
+      if(upIsNew && !done.has(up)){ next.push(r); continue; }
+      if(up && (count.get(up)||0) >= MAX){ errors.push(`Baris ${r.line} (${r.name}): upline sudah punya ${MAX} rekrutan`); progress=true; continue; }
+      if(up) count.set(up,(count.get(up)||0)+1);
+      const date = normDate(r.dateRaw);
+      plan.push({id:r.id, data:{name:r.name, code:r.code || undefined, phone:r.phone, city:r.city, agentTM:r.agentTM, agentAGA:r.agentAGA,
+        joinDate: date || today(), status:r.status, note:r.note, upline: up || null}});
+      if(date===null) errors.push(`Baris ${r.line} (${r.name}): tanggal "${r.dateRaw}" tidak dikenali, dipakai tanggal hari ini`);
+      done.add(r.id); progress=true;
+    }
+    left = next; }
+  for(const r of left) errors.push(`Baris ${r.line} (${r.name}): uplinenya gagal diimport`);
+  return {plan, errors};
+}
+function showImport(name){
+  const {plan, errors} = pending;
+  $("impPanel").hidden=false; $("detailPanel").hidden=true;
+  $("imp").innerHTML = `<div><b>${esc(name)}</b></div>
+    <div><span class="ok">${plan.length} member siap ditambahkan.</span>${errors.length?` ${errors.length} catatan:`:""}</div>
+    ${errors.length?`<ul>${errors.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:""}
+    <div class="actions"><button type="button" class="primary" id="impGo" ${plan.length?"":"disabled"}>Tambahkan ${plan.length} member</button>
+    <button type="button" id="impTpl">Unduh template</button></div>
+    <p class="hint">Kolom yang dibaca: Kode, Nama, No HP, Kota, Kode Agen TM, Kode Agen AGA PRO, Tanggal Gabung, Status, Kode Upline atau Nama Upline, Catatan.</p>`;
+  $("impTpl").onclick = downloadTemplate;
+  $("impGo").onclick = runImport;
+  $("impPanel").scrollIntoView({behavior:"smooth",block:"start"});
+}
+async function runImport(){
+  const btn=$("impGo"); btn.disabled=true; let ok=0;
+  try{ for(const p of pending.plan){ await must(sb.from("members").insert(toRow({id:p.id, ...p.data}))); ok++; btn.textContent=`Menyimpan ${ok}/${pending.plan.length}…`; } 
+    try{ await must(sb.rpc("sync_code_seq")); }catch(e){}
+    await loadMembers(); toast(`${ok} member berhasil diimport`); pending=null; $("impPanel").hidden=true; }
+  catch(err){ toast(`${ok} tersimpan, lalu gagal: ${errMsg(err)}`); btn.disabled=false; btn.textContent="Coba lanjutkan"; pending.plan = pending.plan.slice(ok); }
+}
+function downloadTemplate(){
+  saveXlsx("template-member-aga-pro.xlsx", [
+    {"Kode":"AGA0001","Nama":"Contoh Pucuk","No HP":"081234567890","Kota":"Medan","Kode Agen TM":"TM-001","Kode Agen AGA PRO":"AP-001","Tanggal Gabung":"01/10/2026","Status":"Aktif","Kode Upline":"","Nama Upline":"","Catatan":"Baris contoh, hapus sebelum import"},
+    {"Kode":"AGA0002","Nama":"Contoh Rekrutan","No HP":"081298765432","Kota":"Binjai","Kode Agen TM":"TM-002","Kode Agen AGA PRO":"AP-002","Tanggal Gabung":"05/10/2026","Status":"Aktif","Kode Upline":"AGA0001","Nama Upline":"","Catatan":""}]);
+}
+
+$("fDate").value=today();
+render();
+$("treeView").innerHTML = `<div class="empty"><b>Memuat data member…</b></div>`;
+
+async function loadMembers(){
+  let all = [];
+  for(let from = 0;; from += 1000){
+    const rows = await must(sb.from("members").select("*").order("created_at").range(from, from + 999));
+    all = all.concat(rows); if(rows.length < 1000) break;
+  }
+  members = new Map(all.map(x => [x.id, fromRow(x)])); childIdx = null; levelIdx = new Map();
+  if(!loaded && members.size){ loaded = true; roots().forEach(x => open.add(x.id)); }
+  setSync("on", `Tersimpan · ${members.size} member · Akses: ${roleLabel()} (${myEmail})`);
+  render();
+}
+async function loadAccess(){
+  const mine = await must(sb.from("roles").select("*").eq("user_id", myId));
+  myRole = mine[0]?.role || null; iAmOwner = myRole === "owner";
+  roleRows = boss() ? await must(sb.from("roles").select("*").order("created_at")) : mine;
+  masterReqs = await must(sb.from("master_requests").select("*").order("created_at"));
+}
+let started = false, reloadT = null;
+async function start(session){
+  myId = session.user.id; myEmail = (session.user.email || "").toLowerCase(); db = sb;
+  document.body.classList.remove("locked");
+  if(started) return; started = true;
+  try{ await loadAccess(); await loadMembers(); }
+  catch(e){ setSync("err", "Gagal memuat data"); toast(errMsg(e)); }
+  sb.channel("members").on("postgres_changes", {event: "*", schema: "public", table: "members"}, () => {
+    clearTimeout(reloadT); reloadT = setTimeout(() => loadMembers().catch(() => setSync("err", "Koneksi terputus")), 400);
+  }).subscribe();
+  window.addEventListener("focus", () => { loadAccess().then(loadMembers).catch(() => {}); });
+}
+
+// ---- login ----
+let authMode = "login";
+function setAuthMode(mode){
+  authMode = mode; $("auErr").hidden = true;
+  $("authTitle").textContent = {login:"Masuk", signup:"Buat akun", reset:"Password baru"}[mode];
+  $("auGo").textContent = {login:"Masuk", signup:"Daftar", reset:"Simpan password"}[mode];
+  $("auEmail").closest("label").hidden = mode === "reset";
+  $("auPass").autocomplete = mode === "login" ? "current-password" : "new-password";
+  $("auSwitch").innerHTML = mode === "login" ? `Belum punya akun? <button type="button" class="linkbtn" id="auToggle">Daftar di sini</button>` : `Sudah punya akun? <button type="button" class="linkbtn" id="auToggle">Masuk di sini</button>`;
+  $("auSwitch").hidden = mode === "reset"; $("auForgot").hidden = mode !== "login";
+  $("auToggle").onclick = () => setAuthMode(authMode === "login" ? "signup" : "login");
+}
+function authErr(msg){ $("auErr").textContent = msg; $("auErr").hidden = false; }
+$("authForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const email = $("auEmail").value.trim(), password = $("auPass").value;
+  if(authMode !== "reset" && !email.includes("@")) return authErr("Isi email yang benar.");
+  if(password.length < 6) return authErr("Password minimal 6 karakter.");
+  $("auGo").disabled = true;
+  try{
+    if(authMode === "login"){ const {error} = await sb.auth.signInWithPassword({email, password}); if(error) throw error; }
+    else if(authMode === "signup"){ const {data, error} = await sb.auth.signUp({email, password}); if(error) throw error;
+      if(!data.session){ authErr("Akun dibuat. Buka email kamu dan tekan link konfirmasi, lalu masuk di sini."); setAuthMode("login"); $("auErr").hidden = false; } }
+    else { const {error} = await sb.auth.updateUser({password}); if(error) throw error; toast("Password baru tersimpan"); setAuthMode("login"); }
+  }catch(err){
+    const m = err.message || "";
+    authErr(/Invalid login/i.test(m) ? "Email atau password salah." : /already registered/i.test(m) ? "Email ini sudah terdaftar. Silakan masuk." : /Email not confirmed/i.test(m) ? "Email belum dikonfirmasi. Cek kotak masuk email kamu." : m || "Gagal. Coba lagi.");
+  }finally{ $("auGo").disabled = false; }
+});
+$("auForgot").onclick = async () => {
+  const email = $("auEmail").value.trim(); if(!email.includes("@")) return authErr("Isi email kamu dulu, lalu tekan Lupa password.");
+  const {error} = await sb.auth.resetPasswordForEmail(email, {redirectTo: location.origin + location.pathname});
+  authErr(error ? (error.message || "Gagal mengirim email.") : "Link untuk mengganti password sudah dikirim ke email kamu.");
+};
+$("btnOut").onclick = async () => { await sb.auth.signOut(); location.reload(); };
+
+(() => {
+  setAuthMode("login");
+  const cfg = window.AGA_CONFIG || {};
+  if(!window.supabase || !cfg.url || /YOUR-PROJECT/.test(cfg.url)){ authErr("Website belum terhubung ke database. Isi config.js dengan alamat dan kunci Supabase."); $("auGo").disabled = true; return; }
+  sb = window.supabase.createClient(cfg.url, cfg.anonKey);
+  sb.auth.onAuthStateChange((event, session) => {
+    if(event === "PASSWORD_RECOVERY"){ document.body.classList.add("locked"); setAuthMode("reset"); return; }
+    if(session && authMode !== "reset") start(session);
+  });
+})();
+</script>
+</body>
+</html>
