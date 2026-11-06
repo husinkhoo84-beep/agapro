@@ -169,6 +169,31 @@ main .wrap.wide{grid-template-columns:minmax(0,1fr) 330px}
 .mat-act{display:flex;gap:6px;flex-wrap:wrap;margin-top:auto}
 .mat-act a.btn{display:inline-block;text-decoration:none;border-radius:9px;padding:7px 12px;font-weight:600;font-size:13px;background:var(--accent);color:var(--accent-ink)}
 .mat-act button{padding:6px 10px;font-size:13px}
+.gal{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;border-radius:9px;overflow:hidden}
+.gal.n1{grid-template-columns:1fr}.gal.n2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.gal button{padding:0;border:0;border-radius:0;background:var(--surface-2);aspect-ratio:1;overflow:hidden;position:relative;display:block}
+.gal.n1 button{aspect-ratio:16/10}
+.gal img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .2s}
+.gal button:hover img{transform:scale(1.04)}
+.gal .more{position:absolute;inset:0;display:grid;place-items:center;background:rgba(0,0,0,.5);color:#fff;font-size:20px;font-weight:800}
+.mat-card video{width:100%;border-radius:9px;background:#000;max-height:360px}
+.upl{display:flex;flex-direction:column;gap:6px}
+.upl-btn{display:inline-flex!important;flex-direction:row!important;align-self:flex-start;align-items:center;gap:8px;border:1px dashed var(--accent);color:var(--accent);border-radius:9px;padding:9px 14px;cursor:pointer;font-weight:600}
+.upl-btn input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.upl-btn:focus-within{outline:2px solid var(--accent);outline-offset:2px}
+.upl-list{display:flex;flex-wrap:wrap;gap:6px}
+.upl-chip{display:inline-flex;align-items:center;gap:6px;background:var(--surface-2);border-radius:8px;padding:4px 6px 4px 8px;font-size:12px;max-width:100%}
+.upl-chip img{width:28px;height:28px;object-fit:cover;border-radius:5px}
+.upl-chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px}
+.upl-chip button{padding:2px 7px;font-size:12px}
+.lb{position:fixed;inset:0;z-index:50;background:rgba(5,10,25,.92);display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:8px;padding:16px}
+.lb figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:8px;min-width:0}
+.lb img{max-width:100%;max-height:82vh;border-radius:8px;object-fit:contain}
+.lb figcaption{color:#fff;font-size:13px;text-align:center}
+.lb button{background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.3)}
+.lb-x{position:absolute;top:max(12px,env(safe-area-inset-top,0px));right:12px}
+.lb-nav{font-size:26px;line-height:1;padding:10px 14px}
+@media (max-width:600px){.lb{grid-template-columns:1fr;padding:56px 8px 16px}.lb-nav{position:absolute;bottom:16px}.lb-prev{left:16px}.lb-next{right:16px}}
 .mat-empty{padding:14px;color:var(--muted);font-size:13px;margin:0}
 #matForm{padding:14px;border-bottom:1px solid var(--line);display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 #matForm label{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:600}
@@ -235,6 +260,7 @@ body:not(.locked) #authView{display:none}
   <div id="matBody">
     <form id="matForm" hidden>
       <label>Jenis<select id="mKind">
+        <option value="photo">Foto / galeri</option>
         <option value="video">Video</option>
         <option value="file">File / brosur (PDF)</option>
         <option value="info">Pengumuman</option>
@@ -242,6 +268,11 @@ body:not(.locked) #authView{display:none}
       </select></label>
       <label>Judul<input id="mTitle" maxlength="120" required placeholder="cth. Cara kerja AGA Pro"></label>
       <label class="full"><span id="mUrlLbl">Link video (YouTube atau Google Drive)</span><input id="mUrl" maxlength="500" placeholder="https://youtu.be/..." autocomplete="off"><span class="hint" id="mUrlHint">Tempel link dari tombol Bagikan di YouTube, atau link Google Drive yang sudah diatur "Siapa saja yang memiliki link".</span></label>
+      <div class="full upl" id="mUpl">
+        <label class="upl-btn"><input id="mFiles" type="file" multiple accept="image/*"><span id="mFilesLbl">Pilih foto dari perangkat</span></label>
+        <span class="hint" id="mFilesHint">Bisa pilih banyak foto sekaligus. Foto otomatis dikecilkan supaya cepat dibuka.</span>
+        <div class="upl-list" id="mFileList"></div>
+      </div>
       <label class="full">Keterangan<textarea id="mNote" rows="3" maxlength="2000" placeholder="Opsional"></textarea></label>
       <label>Urutan<input id="mSort" type="number" value="0" step="1"><span class="hint">Angka kecil tampil lebih dulu.</span></label>
       <div class="full mat-act"><button type="submit" class="primary" id="mSave">Simpan</button><button type="button" id="mCancel">Batal</button></div>
@@ -249,6 +280,12 @@ body:not(.locked) #authView{display:none}
     <div class="mat-grid" id="matGrid"></div>
   </div>
 </section></div>
+<div class="lb" id="lb" hidden role="dialog" aria-modal="true" aria-label="Foto">
+  <button type="button" class="lb-x" id="lbX" aria-label="Tutup">✕</button>
+  <button type="button" class="lb-nav lb-prev" id="lbPrev" aria-label="Sebelumnya">‹</button>
+  <figure><img id="lbImg" alt=""><figcaption id="lbCap"></figcaption></figure>
+  <button type="button" class="lb-nav lb-next" id="lbNext" aria-label="Berikutnya">›</button>
+</div>
 <main><div class="wrap" id="mainWrap">
   <section class="panel">
     <div class="panel-head">
@@ -807,12 +844,68 @@ async function loadAccess(){
 }
 
 // ---- materi (videos, files, announcements, admin contacts) ----
-let mats = [], matEdit = null;
-const MAT_KIND = {info:"Pengumuman", video:"Video", file:"File", contact:"Kontak admin"};
-const MAT_ORDER = {info:0, video:1, file:2, contact:3};
+let mats = [], matEdit = null, fileUrls = {}, keepFiles = [], newFiles = [];
+const BUCKET = "materi", MAX_BYTES = 50 * 1024 * 1024;
+const isImg = f => /^image\//.test(f.type || "") || /\.(jpe?g|png|webp|gif)$/i.test(f.name || f.path || "");
+const isVid = f => /^video\//.test(f.type || "") || /\.(mp4|mov|webm)$/i.test(f.name || f.path || "");
+async function signFiles(){
+  const paths = [...new Set(mats.flatMap(m => (m.files || []).map(f => f.path)))].filter(p => !fileUrls[p]);
+  if(!paths.length) return;
+  try{
+    const {data, error} = await sb.storage.from(BUCKET).createSignedUrls(paths, 6 * 3600);
+    if(error) throw error;
+    (data || []).forEach(d => { if(d.signedUrl) fileUrls[d.path] = d.signedUrl; });
+  }catch(e){ console.warn("signed urls", e); }
+}
+function shrinkImage(file){
+  return new Promise(resolve => {
+    if(!/^image\/(jpeg|png|webp)$/.test(file.type)) return resolve(file);
+    const url = URL.createObjectURL(file), img = new Image();
+    img.onload = () => {
+      const max = 1800, k = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement("canvas"); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
+      c.toBlob(b => {
+        if(!b || b.size >= file.size) return resolve(file);
+        resolve(new File([b], file.name.replace(/\.\w+$/, "") + ".jpg", {type: "image/jpeg"}));
+      }, "image/jpeg", 0.85);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+    img.src = url;
+  });
+}
+function newId(){
+  if(window.crypto?.randomUUID) return crypto.randomUUID();
+  return Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10);
+}
+function safeName(n){ return (n || "file").normalize("NFKD").replace(/[^\w.\-]+/g, "_").replace(/_+/g, "_").slice(-80); }
+let lbList = [], lbIdx = 0, lbFrom = null;
+function openLb(list, i){
+  lbList = list; lbIdx = i; lbFrom = document.activeElement;
+  $("lb").hidden = false; showLb(); $("lbX").focus();
+}
+function showLb(){
+  const f = lbList[lbIdx]; $("lbImg").src = fileUrls[f.path] || ""; $("lbImg").alt = f.name || "Foto";
+  $("lbCap").textContent = lbList.length > 1 ? `${lbIdx + 1} / ${lbList.length}` : "";
+  $("lbPrev").hidden = $("lbNext").hidden = lbList.length < 2;
+}
+function closeLb(){ $("lb").hidden = true; $("lbImg").src = ""; if(lbFrom) lbFrom.focus(); }
+$("lbX").addEventListener("click", closeLb);
+$("lbPrev").addEventListener("click", () => { lbIdx = (lbIdx - 1 + lbList.length) % lbList.length; showLb(); });
+$("lbNext").addEventListener("click", () => { lbIdx = (lbIdx + 1) % lbList.length; showLb(); });
+$("lb").addEventListener("click", ev => { if(ev.target === $("lb")) closeLb(); });
+document.addEventListener("keydown", ev => {
+  if($("lb").hidden) return;
+  if(ev.key === "Escape") closeLb();
+  if(ev.key === "ArrowLeft") $("lbPrev").click();
+  if(ev.key === "ArrowRight") $("lbNext").click();
+});
+const MAT_KIND = {info:"Pengumuman", photo:"Foto", video:"Video", file:"File", contact:"Kontak admin"};
+const MAT_ORDER = {info:0, photo:1, video:2, file:3, contact:4};
 async function loadMaterials(){
   try{ mats = await must(sb.from("materials").select("*")); }
   catch(e){ mats = []; }
+  await signFiles();
   renderMaterials();
 }
 function embedUrl(url){
@@ -838,29 +931,67 @@ function renderMaterials(){
   if(!list.length){ grid.innerHTML = `<p class="mat-empty">Belum ada materi. Klik "+ Tambah materi" untuk menambah video cara kerja, brosur, pengumuman, atau kontak admin.</p>`; return; }
   grid.innerHTML = list.map(m => {
     const url = m.url || "", emb = m.kind === "video" ? embedUrl(url) : null;
+    const files = (m.files || []).filter(f => fileUrls[f.path]);
+    const imgs = files.filter(isImg), vids = files.filter(isVid), docs = files.filter(f => !isImg(f) && !isVid(f));
     let body = "";
-    if(emb) body = `<div class="mat-frame"><iframe src="${esc(emb)}" title="${esc(m.title)}" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>`;
+    if(imgs.length){
+      const show = imgs.slice(0, 6), n = Math.min(show.length, 3);
+      body += `<div class="gal n${n}">` + show.map((f, i) => `<button type="button" data-gal="${esc(m.id)}" data-i="${i}" aria-label="Lihat foto ${i + 1}"><img src="${esc(fileUrls[f.path])}" alt="" loading="lazy">${i === 5 && imgs.length > 6 ? `<span class="more">+${imgs.length - 6}</span>` : ""}</button>`).join("") + `</div>`;
+    }
+    vids.forEach(f => { body += `<video controls preload="metadata" playsinline src="${esc(fileUrls[f.path])}"></video>`; });
+    const docBtns = docs.map(f => `<a class="btn" href="${esc(fileUrls[f.path])}" target="_blank" rel="noopener">Buka ${esc(/\.pdf$/i.test(f.name || f.path) ? "PDF" : "file")}</a>`).join("");
+    if(emb) body += `<div class="mat-frame"><iframe src="${esc(emb)}" title="${esc(m.title)}" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>`;
     const btn = !url ? "" : m.kind === "contact" ? `<a class="btn" href="${esc(url)}" target="_blank" rel="noopener">${url.includes("wa.me") ? "Chat WhatsApp" : "Hubungi"}</a>`
       : m.kind === "file" ? `<a class="btn" href="${esc(url)}" target="_blank" rel="noopener">Buka file</a>`
       : (m.kind === "video" && !emb) || m.kind === "info" ? `<a class="btn" href="${esc(url)}" target="_blank" rel="noopener">Buka link</a>` : "";
     const admin = boss() ? `<button type="button" data-mat-edit="${esc(m.id)}">Ubah</button><button type="button" class="danger" data-mat-del="${esc(m.id)}">Hapus</button>` : "";
-    return `<article class="mat-card ${esc(m.kind)}"><span class="mat-kind">${esc(MAT_KIND[m.kind] || m.kind)}</span><h3>${esc(m.title)}</h3>${body}${m.note ? `<p>${esc(m.note)}</p>` : ""}${btn || admin ? `<div class="mat-act">${btn}${admin}</div>` : ""}</article>`;
+    return `<article class="mat-card ${esc(m.kind)}"><span class="mat-kind">${esc(MAT_KIND[m.kind] || m.kind)}${imgs.length > 1 ? ` · ${imgs.length} foto` : ""}</span><h3>${esc(m.title)}</h3>${body}${m.note ? `<p>${esc(m.note)}</p>` : ""}${btn || docBtns || admin ? `<div class="mat-act">${docBtns}${btn}${admin}</div>` : ""}</article>`;
   }).join("");
 }
 function matKindUi(){
   const k = $("mKind").value;
   const cfg = {
-    video: ["Link video (YouTube atau Google Drive)", "https://youtu.be/...", 'Tempel link dari tombol Bagikan di YouTube, atau link Google Drive yang sudah diatur "Siapa saja yang memiliki link".'],
-    file: ["Link file (Google Drive, dll.)", "https://drive.google.com/...", 'Upload PDF/brosur ke Google Drive, atur "Siapa saja yang memiliki link", lalu tempel linknya di sini.'],
+    photo: ["Link (opsional)", "https://...", "Boleh dikosongkan. Upload fotonya di bawah."],
+    video: ["Link video YouTube / Google Drive (atau upload di bawah)", "https://youtu.be/...", "Isi link, ATAU upload file video di bawah (maks. 50 MB). Video panjang lebih baik lewat YouTube."],
+    file: ["Link file (atau upload di bawah)", "https://drive.google.com/...", "Isi link, ATAU upload PDF langsung di bawah (maks. 50 MB)."],
     info: ["Link (opsional)", "https://...", "Boleh dikosongkan. Tulis isi pengumuman di Keterangan."],
     contact: ["No. WhatsApp atau link", "0812xxxxxxxx", "Nomor WhatsApp otomatis diubah jadi tombol Chat WhatsApp."]
   }[k];
   $("mUrlLbl").textContent = cfg[0]; $("mUrl").placeholder = cfg[1]; $("mUrlHint").textContent = cfg[2];
+  const up = {photo: ["Pilih foto dari perangkat", "image/*", true, "Bisa pilih banyak foto sekaligus. Foto otomatis dikecilkan supaya cepat dibuka."],
+    video: ["Upload video", "video/mp4,video/quicktime,video/webm", false, "Maks. 50 MB per video (sekitar 1-3 menit). Untuk video panjang pakai link YouTube."],
+    file: ["Upload PDF / gambar", "application/pdf,image/*", true, "Maks. 50 MB per file."],
+    info: ["Tambah foto (opsional)", "image/*", true, "Foto pendukung pengumuman, misalnya poster acara."]}[k];
+  $("mUpl").hidden = !up;
+  if(up){ $("mFilesLbl").textContent = up[0]; $("mFiles").accept = up[1]; $("mFiles").multiple = up[2]; $("mFilesHint").textContent = up[3]; }
+  renderUplList();
 }
+function renderUplList(){
+  const chip = (label, thumb, attr) => `<span class="upl-chip">${thumb ? `<img src="${esc(thumb)}" alt="">` : ""}<span>${esc(label)}</span><button type="button" ${attr} aria-label="Hapus ${esc(label)}">✕</button></span>`;
+  $("mFileList").innerHTML = keepFiles.map((f, i) => chip(f.name || "file", isImg(f) ? fileUrls[f.path] : "", `data-keep="${i}"`)).join("")
+    + newFiles.map((f, i) => chip(f.name, f._thumb || "", `data-new="${i}"`)).join("");
+}
+$("mFiles").addEventListener("change", () => {
+  const picked = [...$("mFiles").files]; $("mFiles").value = "";
+  if(!$("mFiles").multiple){ newFiles = []; keepFiles = []; }
+  for(const f of picked){
+    if(f.size > MAX_BYTES && !isImg(f)){ toast(`"${f.name}" lebih dari 50 MB`); continue; }
+    if(isImg(f)) f._thumb = URL.createObjectURL(f);
+    newFiles.push(f);
+  }
+  renderUplList();
+});
+$("mFileList").addEventListener("click", ev => {
+  const k = ev.target.closest("[data-keep]"), n = ev.target.closest("[data-new]");
+  if(k) keepFiles.splice(+k.dataset.keep, 1);
+  if(n) newFiles.splice(+n.dataset.new, 1);
+  renderUplList();
+});
 function openMatForm(m){
   matEdit = m ? m.id : null;
-  $("mKind").value = m?.kind || "video"; $("mTitle").value = m?.title || ""; $("mUrl").value = m?.url || "";
+  $("mKind").value = m?.kind || "photo"; $("mTitle").value = m?.title || ""; $("mUrl").value = m?.url || "";
   $("mNote").value = m?.note || ""; $("mSort").value = m?.sort ?? 0;
+  keepFiles = [...(m?.files || [])]; newFiles = [];
   matKindUi(); setMatOpen(true); $("matForm").hidden = false; $("mTitle").focus();
 }
 function setMatOpen(open){
@@ -870,7 +1001,7 @@ function setMatOpen(open){
 }
 $("mKind").addEventListener("change", matKindUi);
 $("matAdd").addEventListener("click", () => openMatForm(null));
-$("mCancel").addEventListener("click", () => { $("matForm").hidden = true; matEdit = null; });
+$("mCancel").addEventListener("click", () => { $("matForm").hidden = true; matEdit = null; keepFiles = []; newFiles = []; });
 $("matToggle").addEventListener("click", () => setMatOpen($("matBody").hidden));
 try{ if(localStorage.getItem("aga-mat-hidden")) setMatOpen(false); }catch(e){}
 $("matForm").addEventListener("submit", async ev => {
@@ -880,23 +1011,51 @@ $("matForm").addEventListener("submit", async ev => {
   if(!title){ toast("Judul wajib diisi"); return; }
   if(kind === "contact") url = waLink(url);
   else if(url && !/^https:\/\//i.test(url)) url = "https://" + url.replace(/^http:\/\//i, "");
-  if((kind === "video" || kind === "file") && !url){ toast("Link wajib diisi"); return; }
+  const hasFiles = keepFiles.length + newFiles.length > 0;
+  if((kind === "video" || kind === "file") && !url && !hasFiles){ toast("Isi link atau upload file"); return; }
+  if(kind === "photo" && !hasFiles){ toast("Pilih minimal 1 foto"); return; }
   const row = {kind, title, url, note: $("mNote").value.trim(), sort: parseInt($("mSort").value, 10) || 0};
+  const old = matEdit ? (mats.find(m => m.id === matEdit)?.files || []) : [];
+  const uploaded = [];
   $("mSave").disabled = true;
   try{
+    for(let i = 0; i < newFiles.length; i++){
+      $("mSave").textContent = `Mengupload ${i + 1}/${newFiles.length}…`;
+      let f = newFiles[i];
+      if(isImg(f)) f = await shrinkImage(f);
+      if(f.size > MAX_BYTES) throw new Error(`"${f.name}" lebih dari 50 MB`);
+      const path = `${newId()}/${safeName(f.name)}`;
+      const {error} = await sb.storage.from(BUCKET).upload(path, f, {contentType: f.type || undefined, upsert: false});
+      if(error) throw error;
+      uploaded.push({path, name: f.name, type: f.type || "", size: f.size});
+    }
+    $("mSave").textContent = "Menyimpan…";
+    if(hasFiles || old.length) row.files = [...keepFiles, ...uploaded];
     if(matEdit) await must(sb.from("materials").update(row).eq("id", matEdit));
     else await must(sb.from("materials").insert(row));
-    $("matForm").hidden = true; matEdit = null; toast("Materi disimpan"); await loadMaterials();
-  }catch(e){ toast(errMsg(e)); }
-  finally{ $("mSave").disabled = false; }
+    const dropped = old.filter(o => !keepFiles.some(k => k.path === o.path)).map(o => o.path);
+    if(dropped.length) sb.storage.from(BUCKET).remove(dropped).catch(() => {});
+    $("matForm").hidden = true; matEdit = null; keepFiles = []; newFiles = [];
+    toast("Materi disimpan"); await loadMaterials();
+  }catch(e){
+    if(uploaded.length) sb.storage.from(BUCKET).remove(uploaded.map(u => u.path)).catch(() => {});
+    toast(/bucket not found|row-level security/i.test(e?.message || "") ? "Penyimpanan file belum siap. Jalankan upload.sql di Supabase dulu." : errMsg(e));
+  }
+  finally{ $("mSave").disabled = false; $("mSave").textContent = "Simpan"; }
 });
 $("matGrid").addEventListener("click", async ev => {
-  const ed = ev.target.closest("[data-mat-edit]"), del = ev.target.closest("[data-mat-del]");
+  const ed = ev.target.closest("[data-mat-edit]"), del = ev.target.closest("[data-mat-del]"), g = ev.target.closest("[data-gal]");
+  if(g){ const m = mats.find(x => x.id === g.dataset.gal); openLb((m.files || []).filter(f => isImg(f) && fileUrls[f.path]), +g.dataset.i); return; }
   if(ed){ openMatForm(mats.find(m => m.id === ed.dataset.matEdit)); return; }
   if(del){
     const m = mats.find(x => x.id === del.dataset.matDel);
     if(!m || !confirm(`Hapus materi "${m.title}"?`)) return;
-    try{ await must(sb.from("materials").delete().eq("id", m.id)); toast("Materi dihapus"); await loadMaterials(); }
+    try{
+      await must(sb.from("materials").delete().eq("id", m.id));
+      const paths = (m.files || []).map(f => f.path);
+      if(paths.length) sb.storage.from(BUCKET).remove(paths).catch(() => {});
+      toast("Materi dihapus"); await loadMaterials();
+    }
     catch(e){ toast(errMsg(e)); }
   }
 });
